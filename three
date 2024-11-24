@@ -1,0 +1,355 @@
+#include <iostream>
+#include <iomanip>
+#include <cstdlib>
+using namespace std;
+
+void display(char board[][7]){ //this function displays the 2-d array of the board on the terminal
+    cout<<" _______________________"<<endl;
+    cout<<"|                       |"<<endl;
+    for (int i = 0; i <= 5; i++){
+        cout<<"|";
+        for (int j = 0; j <= 6; j++){
+            cout<<setw(3)<<board[i][j];
+        }
+        cout<<"  |";
+        cout<<endl;
+    }
+    cout<<"|-----------------------|"<<endl<<"|";
+    for (int i = 1; i <= 7; i++){cout<<setw(3)<<i;}
+    cout<<"  |"<<endl<<"|_______________________|"<<endl;
+}
+
+bool addValue(char board[][7], int column, char value){ //this function adds the character in "value" into the column number given on the topmost available space. if succesful, the function returns true, else, if the whole column is filled, it returns false.
+    int check = 5;
+    while ((board[check][column] != '-') && (check >= 0)){
+        check -= 1;
+    }
+    if (check == -1){
+        return false;
+    }
+    else{
+        board[check][column] = value;
+        return true;
+    }
+}
+
+void removeValue(char board[][7], int column, char value){ //this function removes one charcter given in "value" from the column given at the topmost position, the program is written such that there will always be atleast one character in the column when this is called.
+    int check = 5;
+    while ((board[check][column] != '-') && (check >= 0)){
+        check -= 1;
+    }
+    board[check + 1][column] = '-';
+}
+
+int utility(char board[][7], char value){ //this function calculates and returns the utility of a certain state of the game with respect to a certain player whose character is "value". it does this by adding all the amount of similar elements that line up in vertical, horizontal or diagonal manner in pairs or in groups of 3. if 4 line up, that is recognized by the checkWin() function
+    int total = 0;
+
+    for (int i = 0; i <= 4; i++){
+        for (int j = 0; j <= 6; j++){
+            if ((board[i][j] == value) && (board[i+1][j] == value)){
+                total += 1;
+            }
+        }
+    }
+    for (int i = 0; i <= 3; i++){
+        for (int j = 0; j <= 6; j++){
+            if ((board[i][j] == value) && (board[i+1][j] == value) && (board[i+2][j] == value)){
+                total += 1;
+            }
+        }
+    }
+
+    for (int i = 0; i <= 5; i++){
+        for (int j = 0; j <= 5; j++){
+            if ((board[i][j] == value) && (board[i][j+1] == value)){
+                total += 1;
+            }
+        }
+    }
+    for (int i = 0; i <= 5; i++){
+        for (int j = 0; j <= 4; j++){
+            if ((board[i][j] == value) && (board[i][j+1] == value) && (board[i][j+2] == value)){
+                total += 1;
+            }
+        }
+    }
+
+    for (int i = 1; i <= 5; i++){
+        for (int j = 0; j <= 5; j++){
+            if ((board[i][j] == value) && (board[i-1][j+1] == value)){
+                total += 1;
+            }
+        }
+    }
+    for (int i = 2; i <= 5; i++){
+        for (int j = 0; j <= 4; j++){
+            if ((board[i][j] == value) && (board[i-1][j+1] == value) && (board[i-2][j+2] == value)){
+                total += 1;
+            }
+        }
+    }
+
+    for (int i = 0; i <= 4; i++){
+        for (int j = 0; j <= 5; j++){
+            if ((board[i][j] == value) && (board[i+1][j+1] == value)){
+                total += 1;
+            }
+        }
+    }
+    for (int i = 0; i <= 3; i++){
+        for (int j = 0; j <= 4; j++){
+            if ((board[i][j] == value) && (board[i+1][j+1] == value) && (board[i+2][j+2] == value)){
+                total += 1;
+            }
+        }
+    }
+
+    return total;
+}
+
+bool checkWin(char board[][7], char value){ //this function recognises if there is any instance of the character in "value", lining up in groups of 4 in horizontal, vertical or diagonal manner
+    for (int i = 0; i <= 2; i++){
+        for (int j = 0; j <= 6; j++){
+            if ((board[i][j] == value) && (board[i+1][j] == value) && (board[i+2][j] == value) && (board[i+3][j] == value)){
+                return true;
+            }
+        }
+    }
+    for (int i = 0; i <= 5; i++){
+        for (int j = 0; j <= 3; j++){
+            if ((board[i][j] == value) && (board[i][j+1] == value) && (board[i][j+2] == value) && (board[i][j+3] == value)){
+                return true;
+            }
+        }
+    }
+    for (int i = 3; i <= 5; i++){
+        for (int j = 0; j <= 3; j++){
+            if ((board[i][j] == value) && (board[i-1][j+1] == value) && (board[i-2][j+2] == value) && (board[i-3][j+3] == value)){
+                return true;
+            }
+        }
+    }
+    for (int i = 0; i <= 2; i++){
+        for (int j = 0; j <= 3; j++){
+            if ((board[i][j] == value) && (board[i+1][j+1] == value) && (board[i+2][j+2] == value) && (board[i+3][j+3] == value)){
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+int minMax(char board[][7], int depth, bool comp){ //this is a recurcive funtion that uses a minMax algorithm to simulate all possibilities of the next 6 moves in the game and returns the best utility value achievable in 6 moves from the state provided, given that player plays perfectly. if the player makes a mistake new possibilities open.
+    if (checkWin(board, 'O')){
+        return (50 + 2*depth);
+    }
+    else if (checkWin(board, 'X')){
+        return -1;
+    }
+    else if (depth == 0){
+        return (utility(board, 'X') + depth);
+    }
+
+    if (comp){
+        int max = -2;
+        for (int i = 0; i <= 6; i++){
+            if (addValue(board, i, 'O')){
+                int eval = minMax(board, (depth - 1), false);
+                if (max <= eval){
+                    max = eval;
+                }
+                removeValue(board, i, 'O');
+            }
+        }
+        if (max == -2){
+            max = 0;
+        }
+        return max;
+    }
+    else{
+        int min = 100;
+        for (int i = 0; i <= 6; i++){
+            if (addValue(board, i, 'X')){
+                int eval = minMax(board, (depth - 1), true);
+                if (min >= eval){
+                    min = eval;
+                }
+                removeValue(board, i, 'X');
+            }
+        }
+        if (min == 2){
+            min = 0;
+        }
+        return min;
+    }
+}
+
+int compMove(char board[][7]){ // this function uses the minMax function to figure out the best possible next move for the ai, if the opponent is about to win, it priorotizes blocking that rather then using the minMax function
+    int choice = -1;
+
+    for (int i = 0; i <= 6; i++){
+        if (addValue(board, i, 'X')){
+            if (checkWin(board, 'X')){
+                choice = i;
+            }
+            removeValue(board, i, 'X');
+        }
+    }
+
+    if (choice != -1){
+        return choice;
+    }
+    int max = -2;
+    for (int i = 0; i <= 6; i++){
+        if (addValue(board, i, 'O')){
+            int eval = minMax(board, 6, true);
+            if (eval > max){
+                max = eval;
+                choice = i;
+            }
+            removeValue(board, i, 'O');
+        }
+    }
+    
+    return choice;
+}
+
+int main(){
+    char board[6][7];
+
+    for (int i = 0; i < 6; i++){
+        for (int j = 0; j < 7; j++){
+            board[i][j] = '-';
+        }
+    }
+
+    char pvp;
+    cout<<"Would you like to play 2 player mode (p) or player vs computer mode (c)? ";
+    cin>>pvp;
+    while ((pvp != 'p') && (pvp != 'c')){
+        cout<<"wrong input, please enter p or c";
+        cin>>pvp;
+    }
+
+    if (pvp == 'p'){
+        int choice = 0;
+        int turn = 1;
+
+        display(board);
+        cout<<"enter the number of column you want to add your mark at"<<endl;
+        bool gameend = false;
+        while (!(gameend)){
+            if (turn % 2 == 1){
+                cout<<"player 1 turn, enter choice: ";
+                cin>>choice;
+                while ((choice < 1) || (choice > 7)){
+                    cout<<"invalid column, enter a chioce between 1 and 7: ";
+                    cin>>choice;
+                }
+                while (!(addValue(board, choice - 1, 'X'))){
+                    cout<<"column filled, enter some other choice: ";
+                    cin>>choice;
+                    while ((choice < 1) || (choice > 7)){
+                    cout<<"invalid column, enter a chioce between 1 and 7: ";
+                    cin>>choice;
+                    }
+                }
+                display(board);
+                if (checkWin(board,'X')){
+                    cout<<"player 1 wins!!"<<endl;
+                    gameend = true;
+                }
+                if ((board[0][0] != '-') && (board[0][1] != '-') && (board[0][2] != '-') && (board[0][3] != '-') && (board[0][4] != '-') && (board[0][5] != '-') && (board[0][6] != '-')){
+                    gameend = true;
+                }
+                turn += 1;
+            }
+            else{
+                cout<<"player 2 turn, enter choice: ";
+                cin>>choice;
+                while ((choice < 1) || (choice > 7)){
+                    cout<<"invalid column, enter a chioce between 1 and 7: ";
+                    cin>>choice;
+                }
+                while (!(addValue(board, choice - 1, 'O'))){
+                    cout<<"column filled, enter some other choice: ";
+                    cin>>choice;
+                    while ((choice < 1) || (choice > 7)){
+                    cout<<"invalid column, enter a chioce between 1 and 7: ";
+                    cin>>choice;
+                    }
+                }
+                display(board);
+                if (checkWin(board,'O')){
+                    cout<<"player 2 wins!!"<<endl;
+                    gameend = true;
+                }
+                if ((board[0][0] != '-') && (board[0][1] != '-') && (board[0][2] != '-') && (board[0][3] != '-') && (board[0][4] != '-') && (board[0][5] != '-') && (board[0][6] != '-')){
+                    gameend = true;
+                }
+                turn += 1;
+            }
+        }    
+    }
+
+    if (pvp == 'c'){
+        int choice = 0;
+        int turn = 1;
+
+        display(board);
+        cout<<"enter the number of column you want to add your mark at"<<endl;
+        bool gameend = false;
+        while (!(gameend)){
+            if (turn % 2 == 1){
+                cout<<"player's turn, enter choice: ";
+                cin>>choice;
+                while ((choice < 1) || (choice > 7)){
+                    cout<<"invalid column, enter a chioce between 1 and 7: ";
+                    cin>>choice;
+                }
+                while (!(addValue(board, choice - 1, 'X'))){
+                    cout<<"column filled, enter some other choice: ";
+                    cin>>choice;
+                    while ((choice < 1) || (choice > 7)){
+                    cout<<"invalid column, enter a chioce between 1 and 7: ";
+                    cin>>choice;
+                    }
+                }
+                display(board);
+                if (checkWin(board,'X')){
+                    cout<<"player wins!!"<<endl;
+                    gameend = true;
+                }
+                if ((board[0][0] != '-') && (board[0][1] != '-') && (board[0][2] != '-') && (board[0][3] != '-') && (board[0][4] != '-') && (board[0][5] != '-') && (board[0][6] != '-')){
+                    gameend = true;
+                }
+                turn += 1;
+            }
+            else{
+                cout<<"computer's turn: "<<endl;
+                choice = compMove(board);
+                if (choice < 0){
+                choice = (rand() % 7);
+                }
+                while (!(addValue(board, choice, 'O'))){
+                choice = rand() % 7;
+                }
+                display(board);
+                if (checkWin(board,'O')){
+                    cout<<"computer wins!!"<<endl;
+                    gameend = true;
+                }
+                if ((board[0][0] != '-') && (board[0][1] != '-') && (board[0][2] != '-') && (board[0][3] != '-') && (board[0][4] != '-') && (board[0][5] != '-') && (board[0][6] != '-')){
+                    gameend = true;
+                }
+                turn += 1;
+
+            }
+        }
+    }
+    if (!checkWin(board, 'X') && !checkWin(board, 'O')){
+        cout<<"no space left, game drawn"<<endl;
+    }
+    
+    return 0;
+}
